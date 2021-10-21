@@ -1,0 +1,9 @@
+- hosts: localhost
+  connection: local
+  any_errors_fatal: true
+
+  roles :
+
+    - role: peer
+      requester: pj-terra-one-vpc
+      acceptor: pj-terra-two-vpc

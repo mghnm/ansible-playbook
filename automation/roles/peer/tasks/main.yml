@@ -1,0 +1,41 @@
+# Gather information about VPC with a tag key Name and value
+- name: Finding information about requester with name {{requester}}
+  amazon.aws.ec2_vpc_net_info:
+    filters:
+      "tag:Name": {{requester}}
+  register: requester_vpc
+
+- name: Make sure only one requester vpc was found
+  fail:
+    msg: "More than one requester with that name exists. Or no requester with that name exists."
+    when: not requester_vpc.vpcs|length == 1
+
+- name: Finding information about acceptor with name {{acceptor}}
+  amazon.aws.ec2_vpc_net_info:
+    filters:
+      "tag:Name": {{acceptor}}
+  register: acceptor_vpc
+  failed_when: not requester_vpc.vpcs|length == 1
+
+- name: Make sure only one acceptor vpc was found
+  fail:
+    msg: "More than one acceptor with that name exists. Or no acceptor with that name exists."
+    when: not acceptor_vpc.vpcs|length == 1  
+
+  # Complete example to create and accept a local peering connection.
+- name: Create VPC peering Connection
+  community.aws.ec2_vpc_peer:
+    region: eu-north-1
+    vpc_id: {{requester_vpc.vpcs[0].id}}
+    peer_vpc_id: {{requester_vpc.vpcs[0].id}}
+    state: present
+    tags:
+      Name: Peering connection for {{requester}} to {{acceptor}}
+  register: vpc_peer
+
+- name: Accept local VPC peering request
+  community.aws.ec2_vpc_peer:
+    region: eu-north-1
+    peering_id: "{{ vpc_peer.peering_id }}"
+    state: accept
+  register: action_peer
